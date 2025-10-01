@@ -1,24 +1,109 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Manifestar App</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Aponta para o manifest -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1976d2">
+  <meta charset="utf-8">
+  <title>Planilha Test - API + GitHub</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; cursor: pointer; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    th { background-color: #eee; }
+    button { margin-top: 10px; padding: 6px 12px; }
+  </style>
 </head>
 <body>
-  <h1>🚀 Manifestar App</h1>
-  <p>Se aparecer o botão "+" na barra de endereços, deu certo 🎉</p>
+  <h2>📊 Planilha Test via API</h2>
+
+  <h3>Adicionar item</h3>
+  <label>Nome: <input type="text" id="nome"></label><br>
+  <label>Valor: <input type="number" id="valor" step="0.01"></label><br>
+  <label>Ativo: <input type="checkbox" id="ativo"></label><br>
+  <button onclick="addItem()">Adicionar</button>
+
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nome</th>
+        <th>Valor</th>
+        <th>Ativo</th>
+        <th>Data-Hora</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="totals"></div>
 
   <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js")
-        .then(() => console.log("✅ SW registrado"))
-        .catch(err => console.error("Erro SW:", err));
+    const API_URL = "https://script.google.com/macros/s/SEU_ID/exec";
+
+    async function loadData() {
+      const res = await fetch(API_URL + "?action=getData");
+      const data = await res.json();
+      renderData(data);
     }
+
+    function renderData(data) {
+      const tbody = document.querySelector('#dataTable tbody');
+      tbody.innerHTML = '';
+
+      if (!data || !data.rows || data.rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5">Nenhum registro</td></tr>';
+        document.getElementById('totals').innerText = '';
+        return;
+      }
+
+      data.rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.id}</td>
+          <td>${r.nome}</td>
+          <td>${r.valor.toFixed(2)}</td>
+          <td>${r.ativo ? 'Sim' : 'Não'}</td>
+          <td>${new Date(r.data_hora).toLocaleString()}</td>
+        `;
+        tr.onclick = () => toggleAtivo(r.id);
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('totals').innerText =
+        `Total valor: R$ ${Number(data.total).toFixed(2)}, Ativos: ${data.ativos}, Inativos: ${data.inativos}`;
+    }
+
+    async function addItem() {
+      const nome = document.getElementById('nome').value;
+      const valor = parseFloat(document.getElementById('valor').value);
+      const ativo = document.getElementById('ativo').checked;
+
+      if (!nome || isNaN(valor)) {
+        alert("Preencha nome e valor corretamente!");
+        return;
+      }
+
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "addData", nome, valor, ativo })
+      });
+
+      document.getElementById('nome').value = '';
+      document.getElementById('valor').value = '';
+      document.getElementById('ativo').checked = false;
+
+      loadData();
+    }
+
+    async function toggleAtivo(id) {
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "toggleAtivo", id })
+      });
+      loadData();
+    }
+
+    loadData();
   </script>
 </body>
 </html>
