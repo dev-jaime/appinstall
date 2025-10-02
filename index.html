@@ -86,6 +86,7 @@ function renderTable(items) {
 db.collection('items').orderBy('created').onSnapshot(snapshot => {
   renderTable(snapshot.docs);
 });
+  
 </script>
 </body>
 </html>
