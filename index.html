@@ -1,109 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <title>Planilha Test - API + GitHub</title>
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; cursor: pointer; }
-    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-    th { background-color: #eee; }
-    button { margin-top: 10px; padding: 6px 12px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firestore Test</title>
+<style>
+  body { font-family: Arial; padding: 20px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+  th, td { border: 1px solid #ccc; padding: 6px; text-align: left; cursor: pointer; }
+  th { background-color: #eee; }
+  button { margin-top: 10px; padding: 6px 12px; }
+</style>
+<!-- Firebase SDK -->
+<!-- <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<!-- <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+-->
 </head>
 <body>
-  <h2>📊 Planilha Test via API</h2>
+<h2>📊 Firestore Test</h2>
 
-  <h3>Adicionar item</h3>
-  <label>Nome: <input type="text" id="nome"></label><br>
-  <label>Valor: <input type="number" id="valor" step="0.01"></label><br>
-  <label>Ativo: <input type="checkbox" id="ativo"></label><br>
-  <button onclick="addItem()">Adicionar</button>
+<h3>Adicionar item</h3>
+<label>Nome: <input type="text" id="nome"></label><br>
+<label>Valor: <input type="number" id="valor" step="0.01"></label><br>
+<label>Ativo: <input type="checkbox" id="ativo"></label><br>
+<button onclick="addItem()">Adicionar</button>
 
-  <table id="dataTable">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Nome</th>
-        <th>Valor</th>
-        <th>Ativo</th>
-        <th>Data-Hora</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>Nome</th>
+      <th>Valor</th>
+      <th>Ativo</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
-  <div id="totals"></div>
+<script>
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// 🔹 Config Firebase (substitua com suas credenciais)
+const firebaseConfig = {
+  apiKey: "AIzaSyDK3uJ5GUlDo8Syrws9iJybqloTW3dFPiU",
+  authDomain: "web-app-5f4cf.firebaseapp.com",
+  projectId: "web-app-5f4cf",
+  storageBucket: "web-app-5f4cf.firebasestorage.app",
+  messagingSenderId: "1033574429739",
+  appId: "1:1033574429739:web:f879e1ff7554248936e66e",
+  measurementId: "G-T6JWQZ407T"
+};
+firebase.initializeApp(firebaseConfig);
+  // Initialize Firebase
+//const app = initializeApp(firebaseConfig);
+//const analytics = getAnalytics(app);
+//const db = firebase.firestore();
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxkU3wlVhlP0LFch3ItREggxHaix1HMj76IU43N2dov78B5IK_C3nWGFWhf7N3do0n6jw/exec";
+// 🔹 Função para adicionar item
+function addItem() {
+  const nome = document.getElementById('nome').value;
+  const valor = parseFloat(document.getElementById('valor').value);
+  const ativo = document.getElementById('ativo').checked;
 
-    async function loadData() {
-      const res = await fetch(API_URL + "?action=getData");
-      const data = await res.json();
-      renderData(data);
-    }
+  if (!nome || isNaN(valor)) { alert("Preencha nome e valor!"); return; }
 
-    function renderData(data) {
-      const tbody = document.querySelector('#dataTable tbody');
-      tbody.innerHTML = '';
+  db.collection('items').add({ nome, valor, ativo, created: new Date() });
+  document.getElementById('nome').value = '';
+  document.getElementById('valor').value = '';
+  document.getElementById('ativo').checked = false;
+}
 
-      if (!data || !data.rows || data.rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5">Nenhum registro</td></tr>';
-        document.getElementById('totals').innerText = '';
-        return;
-      }
+// 🔹 Função para renderizar tabela
+function renderTable(items) {
+  const tbody = document.querySelector('#dataTable tbody');
+  tbody.innerHTML = '';
+  items.forEach(doc => {
+    const data = doc.data();
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${data.nome}</td>
+      <td>${data.valor.toFixed(2)}</td>
+      <td>${data.ativo ? 'Sim' : 'Não'}</td>
+    `;
+    tr.onclick = () => {
+      db.collection('items').doc(doc.id).update({ ativo: !data.ativo });
+    };
+    tbody.appendChild(tr);
+  });
+}
 
-      data.rows.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${r.id}</td>
-          <td>${r.nome}</td>
-          <td>${r.valor.toFixed(2)}</td>
-          <td>${r.ativo ? 'Sim' : 'Não'}</td>
-          <td>${new Date(r.data_hora).toLocaleString()}</td>
-        `;
-        tr.onclick = () => toggleAtivo(r.id);
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById('totals').innerText =
-        `Total valor: R$ ${Number(data.total).toFixed(2)}, Ativos: ${data.ativos}, Inativos: ${data.inativos}`;
-    }
-
-    async function addItem() {
-      const nome = document.getElementById('nome').value;
-      const valor = parseFloat(document.getElementById('valor').value);
-      const ativo = document.getElementById('ativo').checked;
-
-      if (!nome || isNaN(valor)) {
-        alert("Preencha nome e valor corretamente!");
-        return;
-      }
-
-      await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "addData", nome, valor, ativo })
-      });
-
-      document.getElementById('nome').value = '';
-      document.getElementById('valor').value = '';
-      document.getElementById('ativo').checked = false;
-
-      loadData();
-    }
-
-    async function toggleAtivo(id) {
-      await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "toggleAtivo", id })
-      });
-      loadData();
-    }
-
-    loadData();
-  </script>
+// 🔹 Listener em tempo real
+db.collection('items').orderBy('created').onSnapshot(snapshot => {
+  renderTable(snapshot.docs);
+});
+</script>
 </body>
 </html>
