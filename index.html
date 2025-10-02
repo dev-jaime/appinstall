@@ -47,7 +47,7 @@ const firebaseConfig = {
   measurementId: "G-T6JWQZ407T"
 };
 firebase.initializeApp(firebaseConfig);
-  // Initialize Firebase
+const db = firebase.firestore();
 
 // 🔹 Função para adicionar item
 function addItem() {
